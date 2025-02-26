@@ -1,17 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../components/Header";
-// import { Modal } from "bootstrap";
-import { GetAllComments } from "../services/CommentsService";
 import { GetLoginUser } from "../services/UserService";
+import { Modal } from "bootstrap";
 
 export function LoginForm() {
-
-
     const navigate = useNavigate();
     const [password, setPassword] = useState("");
     const [email, setEmail] = useState("");
-
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [error, setError] = useState(false);
 
     function NavigateToFeedbackPage() {
         navigate("/FeedbackPage");
@@ -20,28 +19,60 @@ export function LoginForm() {
     function NavigateToSingForm() {
         navigate("/SingForm");
     }
+
     async function HandleSubmit(event: React.FormEvent) {
         event.preventDefault();
+        setLoading(true);
+        setError(false);
+        setSuccess(false);
+
         try {
             const user = await GetLoginUser(email, password);
+            setLoading(false);
             if (user) {
                 console.log("Usuario logueado:", user);
-                alert(user);
-
+                sessionStorage.setItem("id", user.user_id.toString());
                 sessionStorage.setItem("userName", user.user_name);
                 sessionStorage.setItem("email", user.email);
-                navigate("/FeedbackPage");
+                setSuccess(true);
+                setTimeout(() => {
+                    setSuccess(false);
+                    NavigateToFeedbackPage();
+                }, 3000);
             } else {
-                // Mostrar modal de error
+                setError(true);
+                // setTimeout(() => {
+                //     setError(false);
+                // }, 3000);
                 console.error("Error al iniciar sesión");
-                alert(Error);
             }
         } catch (error) {
+            setLoading(false);
+            setError(true);
+            // setTimeout(() => {
+            //     setError(false);
+            // }, 3000);
             console.error("Error al iniciar sesión:", error);
-
-            // Mostrar modal de error
         }
     }
+
+    useEffect(() => {
+        if (loading) {
+            const loadingModalEl = document.getElementById("loadingModal");
+            if (loadingModalEl) {
+                const loadingModal = new Modal(loadingModalEl);
+                loadingModal.show();
+            }
+        } else {
+            const loadingModalEl = document.getElementById("loadingModal");
+            if (loadingModalEl) {
+                const loadingModal = Modal.getInstance(loadingModalEl);
+                if (loadingModal) {
+                    loadingModal.hide();
+                }
+            }
+        }
+    }, [loading]);
 
     return (
         <>
@@ -51,7 +82,6 @@ export function LoginForm() {
                     <h1 className="text-center">Iniciar sesión</h1>
                     <button className="btn btn-link" onClick={NavigateToFeedbackPage}>Ir a la página de comentarios</button>
                     <form onSubmit={HandleSubmit} className="row g-3">
-
                         <div className="col-12">
                             <label htmlFor="email" className="form-label">Correo Eletrónico</label>
                             <input
@@ -80,7 +110,7 @@ export function LoginForm() {
                 </div>
             </div>
             {/* Success Modal */}
-            <div className="modal fade" id="successModal" tabIndex={-1} aria-labelledby="successModalLabel" aria-hidden="true">
+            <div className={`modal fade ${success ? 'show' : ''}`} id="successModal" tabIndex={-1} aria-labelledby="successModalLabel" aria-hidden={!success} style={{ display: success ? 'block' : 'none' }}>
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content bg-success text-white">
                         <div className="modal-header">
@@ -92,13 +122,13 @@ export function LoginForm() {
                             </h5>
                         </div>
                         <div className="modal-body">
-                            <p>La operación se completó con éxito. Serás rederigido en unos segundos a los comentarios.</p>
+                            <p>La operación se completó con éxito. Serás redirigido en unos segundos a la página de comentarios.</p>
                         </div>
                     </div>
                 </div>
             </div>
             {/* Error Modal */}
-            <div className="modal fade" id="errorModal" tabIndex={-1} aria-labelledby="errorModalLabel" aria-hidden="true">
+            <div className={`modal fade ${error ? 'show' : ''}`} id="errorModal" tabIndex={-1} aria-labelledby="errorModalLabel" aria-hidden={!error} style={{ display: error ? 'block' : 'none' }}>
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content bg-danger text-white">
                         <div className="modal-header">
@@ -112,7 +142,7 @@ export function LoginForm() {
                 </div>
             </div>
             {/* Loading Modal */}
-            <div className="modal fade" id="loadingModal" tabIndex={-1} aria-labelledby="loadingModalLabel" aria-hidden="true">
+            <div className={`modal fade ${loading ? 'show' : ''}`} id="loadingModal" tabIndex={-1} aria-labelledby="loadingModalLabel" aria-hidden={!loading} style={{ display: loading ? 'block' : 'none' }}>
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content">
                         <div className="modal-header">

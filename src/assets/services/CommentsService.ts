@@ -16,8 +16,12 @@ export async function GetAllComments(): Promise<CommentInterface[]> {
         return [];
     }
 }
+export async function CreateComment(idUser: number, comment: string) {
 
-export async function CreateComment(comment: CommentInterface): Promise<CommentInterface | null> {
+    const userData = {
+        id_user: idUser,
+        comment: comment
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/comments`, {
@@ -25,7 +29,7 @@ export async function CreateComment(comment: CommentInterface): Promise<CommentI
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(comment),
+            body: JSON.stringify(userData),
         });
         if (!response.ok) {
             throw new Error("Ocurrió un problema al crear el comentario");

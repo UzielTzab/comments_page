@@ -1,16 +1,55 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../components/Header";
+import { SignUser } from "../services/UserService";
+import { User } from "../interface/user";
 
 export function SingForm() {
-
     const navigate = useNavigate();
     const [Username, setUsername] = useState("");
     const [Password, setPassword] = useState("");
     const [Email, setEmail] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [error, setError] = useState(false);
 
     function NavigateToLoginForm() {
         navigate("/LoginForm");
+    }
+
+    async function HandleSubmit(event: React.FormEvent) {
+        event.preventDefault();
+        setLoading(true);
+        setError(false);
+        setSuccess(false);
+
+        const newUser: User = {
+            user_id: 0,
+            user_name: Username,
+            password: Password,
+            email: Email,
+            comments: []
+        };
+
+        try {
+            const user = await SignUser(newUser);
+            setLoading(false);
+            if (user) {
+                console.log("Usuario registrado:", user);
+                setSuccess(true);
+                setTimeout(() => {
+                    setSuccess(false);
+                    NavigateToLoginForm();
+                }, 3000);
+            } else {
+                setError(true);
+                console.error("Error al registrar el usuario");
+            }
+        } catch (error) {
+            setLoading(false);
+            setError(true);
+            console.error("Error al registrar el usuario:", error);
+        }
     }
 
     return (
@@ -19,7 +58,7 @@ export function SingForm() {
             <div className="d-flex justify-content-center align-items-center vh-100">
                 <div className="card shadow-lg p-4" style={{ width: '400px' }}>
                     <h2 className="card-title text-center mb-4">Crear cuenta</h2>
-                    <form>
+                    <form onSubmit={HandleSubmit}>
                         <div className="mb-3">
                             <label htmlFor="username" className="form-label">Nombre de usuario</label>
                             <input
@@ -51,13 +90,13 @@ export function SingForm() {
                             />
                         </div>
                         <div className="d-grid">
-                            <button onClick={NavigateToLoginForm} className="btn btn-primary" type="submit">Crear</button>
+                            <button className="btn btn-primary" type="submit">Crear</button>
                         </div>
                     </form>
                 </div>
             </div>
             {/* Success Modal */}
-            <div className="modal fade" id="successModal" tabIndex={-1} aria-labelledby="successModalLabel" aria-hidden="true">
+            <div className={`modal fade ${success ? 'show' : ''}`} id="successModal" tabIndex={-1} aria-labelledby="successModalLabel" aria-hidden={!success} style={{ display: success ? 'block' : 'none' }}>
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content bg-success text-white">
                         <div className="modal-header">
@@ -69,13 +108,13 @@ export function SingForm() {
                             </h5>
                         </div>
                         <div className="modal-body">
-                            <p>La operación se completó con éxito. Serás rederigido en unos segundos a los comentarios.</p>
+                            <p>La operación se completó con éxito. Serás redirigido en unos segundos a la página de inicio de sesión.</p>
                         </div>
                     </div>
                 </div>
             </div>
             {/* Error Modal */}
-            <div className="modal fade" id="errorModal" tabIndex={-1} aria-labelledby="errorModalLabel" aria-hidden="true">
+            <div className={`modal fade ${error ? 'show' : ''}`} id="errorModal" tabIndex={-1} aria-labelledby="errorModalLabel" aria-hidden={!error} style={{ display: error ? 'block' : 'none' }}>
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content bg-danger text-white">
                         <div className="modal-header">
@@ -89,7 +128,7 @@ export function SingForm() {
                 </div>
             </div>
             {/* Loading Modal */}
-            <div className="modal fade" id="loadingModal" tabIndex={-1} aria-labelledby="loadingModalLabel" aria-hidden="true">
+            <div className={`modal fade ${loading ? 'show' : ''}`} id="loadingModal" tabIndex={-1} aria-labelledby="loadingModalLabel" aria-hidden={!loading} style={{ display: loading ? 'block' : 'none' }}>
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content">
                         <div className="modal-header">

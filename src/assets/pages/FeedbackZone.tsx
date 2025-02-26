@@ -1,57 +1,68 @@
-import { useState } from "react";
-import { CreateComment, DeleteComment, UpdateComment } from "../services/CommentsService";
+import { useState, useEffect } from "react";
+import { CreateComment, GetAllComments, DeleteComment, UpdateComment } from "../services/CommentsService";
 import { CommentInterface } from "../interface/Comments";
 import { Header } from "../components/Header";
+import { Modal } from "bootstrap";
 
 export function FeedbackZone() {
-    const [comments, setComments] = useState<string[]>([]);
+    const [comments, setComments] = useState<CommentInterface[]>([]);
     const [newComment, setNewComment] = useState("");
-    const [newUsername, setNewUserName] = useState("");
-    const [comment, setComment] = useState<CommentInterface>({ id_comment: 0, id_user: 0, comment: "" });
+    const [loading, setLoading] = useState(false);
 
-    function handleAddComment() {
-        if (newComment.trim() !== "") {
-            setComments([...comments, newComment]);
-            setNewComment("");
+    // Cargar los comentarios al cargar el componente
+    useEffect(() => {
+        async function loadComments() {
+            const data = await GetAllComments();
+            console.log("Comentarios cargados:", data);
+            setComments(data);
         }
-    }
+        loadComments();
+    }, []);
+
     async function HandleSubmit(event: React.FormEvent) {
         event.preventDefault();
+        setLoading(true);
         try {
-            const createdComment = await CreateComment(comment);
-            if (createdComment) {
+            const idUserString = sessionStorage.getItem("id");
+            if (idUserString) {
+                const idUser = parseInt(idUserString, 10);
+                const createdComment = await CreateComment(idUser, newComment);
                 console.log("Comentario creado:", createdComment);
-                // Mostrar modal de éxito o redirigir
+                if (createdComment) {
+                    setNewComment("");
+                    // Volver a cargar los comentarios para obtener los más recientes
+                    const data = await GetAllComments();
+                    setComments(data);
+                }
+            } else {
+                console.error("No se encontró el id del usuario en sessionStorage");
+                // Mostrar modal de error
             }
         } catch (error) {
             console.error("Error al crear el comentario:", error);
             // Mostrar modal de error
+        } finally {
+            setLoading(false);
         }
     }
 
-    async function handleUpdateComment(id_comment: number, updatedText: string) {
-        try {
-            const updatedComment = await UpdateComment(id_comment, { comment: updatedText });
-            if (updatedComment) {
-                console.log("Comentario actualizado:", updatedComment);
-                // Mostrar modal de éxito o redirigir
+    useEffect(() => {
+        if (loading) {
+            const loadingModalEl = document.getElementById("loadingModal");
+            if (loadingModalEl) {
+                const loadingModal = new Modal(loadingModalEl);
+                loadingModal.show();
             }
-        } catch (error) {
-            console.error("Error al actualizar el comentario:", error);
-            // Mostrar modal de error
+        } else {
+            const loadingModalEl = document.getElementById("loadingModal");
+            if (loadingModalEl) {
+                const loadingModal = Modal.getInstance(loadingModalEl);
+                if (loadingModal) {
+                    loadingModal.hide();
+                }
+            }
         }
-    }
-
-    async function handleDeleteComment(id_comment: number) {
-        try {
-            await DeleteComment(id_comment);
-            console.log("Comentario eliminado");
-            // Mostrar modal de éxito o redirigir
-        } catch (error) {
-            console.error("Error al eliminar el comentario:", error);
-            // Mostrar modal de error
-        }
-    }
+    }, [loading]);
 
     return (
         <>
@@ -69,7 +80,7 @@ export function FeedbackZone() {
                             onChange={(e) => setNewComment(e.target.value)}
                         ></textarea>
                     </div>
-                    <button className="btn btn-primary" onClick={handleAddComment}>Agrega tu comentario</button>
+                    <button className="btn btn-primary" onClick={HandleSubmit}>Agrega tu comentario</button>
                 </div>
                 <div className="mt-4">
                     <h2>Comentarios</h2>
@@ -77,16 +88,12 @@ export function FeedbackZone() {
                         <p>No hay comentarios aún.</p>
                     ) : (
                         <ul className="list-group">
-                            {comments.map((comment, index) => (
-                                <li key={index} className="list-group-item">
+                            {comments.map((comment) => (
+                                <li key={comment.id_comment} className="list-group-item">
                                     <div className="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <h5 className="mb-1">Username</h5>
-                                            <p className="mb-1">{comment}</p>
-                                        </div>
-                                        <div>
-                                            <button className="btn btn-primary btn-sm me-2">Editar</button>
-                                            <button className="btn btn-danger btn-sm">Eliminar</button>
+                                            <h5 className="mb-1">{comment.user.user_name}</h5>
+                                            <p className="mb-1">{comment.comment}</p>
                                         </div>
                                     </div>
                                 </li>
@@ -95,38 +102,6 @@ export function FeedbackZone() {
                     )}
                 </div>
 
-                {/* Success Modal */}
-                <div className="modal fade" id="successModal" tabIndex={-1} aria-labelledby="successModalLabel" aria-hidden="true">
-                    <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content bg-success text-white">
-                            <div className="modal-header">
-                                <div className="spinner-border" role="status">
-                                    <span className="visually-hidden">Cargando...</span>
-                                </div>
-                                <h5 className="modal-title ms-3" id="successModalLabel">
-                                    <i className="bi bi-check-circle-fill"></i> Éxito
-                                </h5>
-                            </div>
-                            <div className="modal-body">
-                                <p>La operación se completó con éxito. Serás rederigido en unos segundos a los comentarios.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {/* Error Modal */}
-                <div className="modal fade" id="errorModal" tabIndex={-1} aria-labelledby="errorModalLabel" aria-hidden="true">
-                    <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content bg-danger text-white">
-                            <div className="modal-header">
-                                <h5 className="modal-title" id="errorModalLabel"> <i className="bi bi-x-circle-fill"></i>Error!!</h5>
-                                <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div className="modal-body">
-                                <p>Ocurrió un error al procesar la solicitud. Por favor, inténtelo de nuevo más tarde.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 {/* Loading Modal */}
                 <div className="modal fade" id="loadingModal" tabIndex={-1} aria-labelledby="loadingModalLabel" aria-hidden="true">
                     <div className="modal-dialog modal-dialog-centered">
@@ -144,6 +119,5 @@ export function FeedbackZone() {
                 </div>
             </div>
         </>
-
     );
 }

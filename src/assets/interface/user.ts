@@ -1,6 +1,11 @@
 export interface User {
-    id: number;
+    user_id: number;
     user_name: string;
     password: string;
     email: string;
+    comments: {
+        id_comment: number;
+        id_user: number;
+        comment: string;
+    }[];
 }
