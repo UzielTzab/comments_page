@@ -12,16 +12,52 @@ export function SingForm() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState(false);
+    const [passwordError, setPasswordError] = useState("");
 
     function NavigateToLoginForm() {
         navigate("/LoginForm");
     }
 
+    // Función para validar la contraseña
+    const validatePassword = (password: string) => {
+        const minLength = 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+        if (password.length < minLength) {
+            return "La contraseña debe tener al menos 8 caracteres.";
+        }
+        if (!hasUpperCase) {
+            return "La contraseña debe contener al menos una mayúscula.";
+        }
+        if (!hasLowerCase) {
+            return "La contraseña debe contener al menos una minúscula.";
+        }
+        if (!hasNumbers) {
+            return "La contraseña debe contener al menos un número.";
+        }
+        if (!hasSpecialChar) {
+            return "La contraseña debe contener al menos un carácter especial.";
+        }
+        return "";
+    };
+
     async function HandleSubmit(event: React.FormEvent) {
         event.preventDefault();
+
+
+        const passwordValidationError = validatePassword(Password);
+        if (passwordValidationError) {
+            setPasswordError(passwordValidationError);
+            return;
+        }
+
         setLoading(true);
         setError(false);
         setSuccess(false);
+        setPasswordError("");
 
         const newUser: User = {
             user_id: 0,
@@ -40,7 +76,7 @@ export function SingForm() {
                 setTimeout(() => {
                     setSuccess(false);
                     NavigateToLoginForm();
-                }, 3000);
+                }, 2000);
             } else {
                 setError(true);
                 console.error("Error al registrar el usuario");
@@ -86,11 +122,24 @@ export function SingForm() {
                                 className="form-control"
                                 id="password"
                                 value={Password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                maxLength={8}
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    setPasswordError(validatePassword(e.target.value));
+                                }}
                             />
+                            {passwordError && (
+                                <div className="alert alert-warning mt-2" role="alert" >{passwordError}</div>
+                            )}
                         </div>
                         <div className="d-grid">
-                            <button className="btn btn-primary" type="submit">Crear</button>
+                            <button
+                                className="btn btn-primary"
+                                type="submit"
+                                disabled={!!passwordError || loading}
+                            >
+                                Crear
+                            </button>
                         </div>
                     </form>
                 </div>

@@ -4,26 +4,46 @@ import { useNavigate } from "react-router-dom";
 export function Header() {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
+    const [userName, setUserName] = useState("");
 
     useEffect(() => {
         const storedEmail = sessionStorage.getItem("email");
+        const storedUserName = sessionStorage.getItem("userName");
         if (storedEmail) {
             setEmail(storedEmail);
         }
+        if (storedUserName) {
+            setUserName(storedUserName);
+        }
     }, []);
 
-    function handleLogout() {
+    function handleNavigation(path: string) {
         sessionStorage.removeItem("email");
         sessionStorage.removeItem("id");
         sessionStorage.removeItem("userName");
         setEmail("");
-        navigate("/");
+        setUserName("");
+        navigate(path);
+    }
+
+    function handleLogout() {
+        handleNavigation("/");
     }
 
     return (
         <nav className="navbar navbar-expand-lg bg-body-tertiary">
             <div className="container-fluid">
-                <a className="navbar-brand fw-bolder fs-4" href="/">ORIZON</a>
+                <a
+                    className="navbar-brand fw-bolder fs-4"
+                    href="/"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        handleNavigation("/");
+                    }}
+                >
+                    ORIZON
+                </a>
+
                 <button
                     className="navbar-toggler"
                     type="button"
@@ -39,8 +59,19 @@ export function Header() {
                 <div className="collapse navbar-collapse" id="navbarNavDropdown">
                     <ul className="navbar-nav">
                         <li className="nav-item">
-                            <a className="nav-link active" aria-current="page" href="/">Home</a>
+                            <a
+                                className="nav-link active"
+                                aria-current="page"
+                                href="/"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleNavigation("/");
+                                }}
+                            >
+                                Home
+                            </a>
                         </li>
+
                         {email && (
                             <li className="nav-item">
                                 <a className="nav-link" href="/FeedbackPage">Comentarios</a>
@@ -50,22 +81,14 @@ export function Header() {
                 </div>
 
                 {email && (
-                    <div className="dropdown me-3">
+                    <div className="d-flex align-items-center">
+                        <span className="me-3">{userName || email}</span>
                         <button
-                            className="btn btn-secondary dropdown-toggle"
-                            type="button"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
+                            className="btn btn-link text-decoration-none"
+                            onClick={handleLogout}
                         >
-                            {email}
+                            Cerrar sesión
                         </button>
-                        <ul className="dropdown-menu">
-                            <li>
-                                <button className="dropdown-item" onClick={handleLogout}>
-                                    Cerrar sesión
-                                </button>
-                            </li>
-                        </ul>
                     </div>
                 )}
             </div>
